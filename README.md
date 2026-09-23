@@ -1,30 +1,61 @@
-# Hermes Agent — Docker Deployment
+# KosHub OS — Dashboard Anak Kos (Zero-Cost SaaS)
 
-Repository ini berisi container **Hermes Agent (Nous Research)** yang siap di-deploy ke cloud / PaaS seperti **Render**.
+Single-file **production-ready SPA** tanpa backend server. 100% berjalan di browser HP maupun desktop, optimal untuk **Hugging Face Static Space (Free Tier)**. Terintegrasi **NaraRouter AI** (`agnes-2.5-flash`) untuk pencatatan bahasa natural + **Supabase JS Client** untuk sinkronisasi cloud gratis.
 
-## Isi Repository
+## Fitur
 
-| File | Fungsi |
-|------|--------|
-| `Dockerfile` | Image berbasis Ubuntu 22.04, install Hermes Agent headless (`--skip-browser`), expose port `8080` |
-| `entrypoint.sh` | Entrypoint container, menjalankan `hermes gateway start` |
-| `.gitignore` | Mengecualikan `.env`, log, cache Python, dsb. |
+| Tab | Isi |
+|-----|-----|
+| **Overview** | KPI: Total Kas Bulan Ini, Item Dapur Kritis (stok ≤ 1), Piket Hari Ini + grafik 14 hari + transaksi terakhir |
+| **Kas & Split Bill** | Mutasi, nominal, siapa menalangi, balance utang-piutang otomatis (patungan rata), grafik harian + proporsi |
+| **Inventaris Dapur** | Status stok, badge KRITIS otomatis jika qty ≤ 1, tombol +/− instan |
+| **Jadwal Piket** | Checklist rotasi harian/mingguan, reset harian |
+| **Konfigurasi** | Input BYNARA_API_KEY, Supabase URL + Anon Key, Export/Import JSON |
 
-## Menjalankan Secara Lokal
+### Command Bar AI (Spotlight style)
 
-```bash
-docker build -t hermes-agent .
-docker run -p 8080:8080 hermes-agent
+Ketik bebas, misal:
+
+- `Adril beli telur 1kg 28rb ditalangin sendiri`
+- `Minyak goreng sisa 0, beli baru 32rb oleh Budi`
+- `Bayar iuran sampah 15rb ditalangin Citra`
+
+Aplikasi `fetch POST` langsung ke `https://router.bynara.id/v1/chat/completions` (model `agnes-2.5-flash`), mengekstrak JSON murni (tanpa markdown) dengan skema:
+
+```json
+{ "type": "expense|inventory", "title": "string", "amount": "number", "by": "string", "qty": "number" }
 ```
 
-## Deploy ke Render
+Hasil otomatis tersimpan ke **LocalStorage** (dan ke Supabase bila key aktif). **Tanpa API key pun tetap jalan** via parser lokal fallback.
 
-1. Hubungkan repository GitHub ini ke Render sebagai **Web Service** (Docker).
-2. Pastikan port service diset ke **8080**.
-3. Jika Hermes membutuhkan API key / token, tambahkan sebagai **Environment Variable** di dashboard Render (jangan commit file `.env`).
-4. Deploy — Render akan build dari `Dockerfile` dan menjalankan gateway via `entrypoint.sh`.
+## Tech — Zero Build Tooling (CDN)
 
-## Catatan
+- Tailwind CSS v3, Chart.js 4, Lucide Icons, `@supabase/supabase-js` v2
+- Dark theme SaaS (slate-950/zinc-900, border zinc-800, aksen sky-500/emerald-400), font Plus Jakarta Sans
+- Data: LocalStorage-first (`koshub_db_v1`), Supabase opsional (tabel `expenses`, `inventory`, `chores`)
 
-- Mode instalasi `--skip-browser` membuat image ringan dan cocok untuk free tier cloud.
-- Gateway berjalan di port `8080` sesuai `EXPOSE` pada Dockerfile.
+## Deploy ke Hugging Face Static Space (gratis)
+
+1. Buat Space baru → pilih tipe **Static**.
+2. Upload **hanya** `index.html` (cukup 1 file, tanpa build/docker).
+3. Selesai — aplikasi langsung live di `https://<user>-<space>.hf.space`.
+
+Tidak ada Dockerfile / backend / env server. Semua config via UI web.
+
+## Konfigurasi via Web (tab Konfigurasi)
+
+1. **BYNARA_API_KEY**: paste key dari Bynara → *Simpan Key* → *Tes Koneksi AI*. Key hanya tersimpan di `localStorage` browser, dikirim hanya ke `router.bynara.id`.
+2. **Supabase** (opsional): buat project gratis di supabase.com → buat tabel `expenses`, `inventory`, `chores` → paste URL + anon key → *Simpan & Sync*.
+3. **Backup**: *Export JSON* / *Import JSON* kapan saja.
+
+## Struktur Repo
+
+```text
+index.html   # seluruh aplikasi (HTML+CSS+JS single-file)
+README.md    # dokumentasi ini
+.gitignore
+```
+
+## Lisensi
+
+MIT — bebas dipakai kos mana pun. 🍳
