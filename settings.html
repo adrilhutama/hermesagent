@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pengaturan — KosHub OS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] } } } };</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="public/css/app.css" />
+<script src="public/js/state.js"></script>
+<script src="public/js/ai-client.js"></script>
+<script src="public/js/components.js"></script>
+</head>
+<body data-page="settings" class="bg-zinc-950 text-zinc-100 min-h-screen">
+<div id="kh-drawer" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/70" onclick="KosUI.toggleDrawer(false)"></div>
+  <div class="absolute left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-800 p-4 overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-extrabold">KosHub <span class="text-sky-400">OS</span></p>
+      <button onclick="KosUI.toggleDrawer(false)" class="p-2 rounded-lg border border-zinc-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <nav class="space-y-1.5"></nav>
+  </div>
+</div>
+<aside id="kh-sidebar" class="hidden lg:block fixed left-0 top-0 bottom-0 w-64 border-r border-zinc-800 bg-zinc-950 p-4 overflow-y-auto"></aside>
+<div class="lg:pl-64">
+  <header id="kh-topbar" class="sticky top-0 z-40 backdrop-blur bg-zinc-950/85 border-b border-zinc-800 px-4 py-3 flex items-center gap-3"></header>
+  <main class="px-4 py-5 max-w-3xl mx-auto pb-20">
+    <div class="card p-5">
+      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-amber-400"></i>BYNARA_API_KEY (NaraRouter)</h3>
+      <p class="text-xs text-zinc-500 mt-1">Model <code class="text-emerald-400">agnes-2.5-flash</code> via proxy <code class="text-zinc-300">POST /api/bynara</code>. Key tersimpan di <code class="text-zinc-300">localStorage</code> browser ini saja.</p>
+      <input id="naraKey" type="password" class="field mt-3" placeholder="Paste BYNARA_API_KEY di sini" />
+      <div class="flex flex-wrap gap-2 mt-2.5">
+        <button onclick="saveKey()" class="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-zinc-950 font-bold text-sm">Simpan Key</button>
+        <button onclick="testKey()" class="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 text-sm">Uji Koneksi</button>
+      </div>
+      <p id="naraStatus" class="text-xs text-zinc-500 mt-2"></p>
+    </div>
+
+    <div class="card p-5 mt-3">
+      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="building-2" class="w-4 h-4 text-sky-400"></i>Tenant — Kos ID</h3>
+      <p class="text-xs text-zinc-500 mt-1">Satu browser bisa menampung banyak kos. Samakan Kos ID di semua HP penghuni untuk konteks yang sama.</p>
+      <div id="kosList" class="mt-3 space-y-2"></div>
+      <div class="grid sm:grid-cols-2 gap-2 mt-3">
+        <div class="flex gap-2"><input id="newKos" class="field" placeholder="Nama kos baru" /><button onclick="mkKos()" class="px-4 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold text-sm">Buat</button></div>
+        <div class="flex gap-2"><input id="joinKos" class="field font-mono" placeholder="Join Kos ID (cth: kos-ab12)" /><button onclick="jnKos()" class="px-4 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 text-sm">Join</button></div>
+      </div>
+    </div>
+
+    <div class="card p-5 mt-3">
+      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="hard-drive" class="w-4 h-4 text-zinc-300"></i>Backup Database</h3>
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button onclick="doExport()" class="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 text-sm flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Export .json</button>
+        <label class="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 text-sm flex items-center gap-2 cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i>Import backup<input id="imp" type="file" accept=".json" class="hidden" onchange="doImport(event)" /></label>
+        <button onclick="doWipe()" class="px-4 py-2.5 rounded-xl border border-red-900 bg-red-950 hover:border-red-500 text-sm text-red-300">Hapus data kos ini</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+KosUI.setTitle('Pengaturan & Tenant');
+function render() {
+  var K = KosHub;
+  if (!document.getElementById('naraKey').value && K.getKey()) document.getElementById('naraKey').value = '••••••••';
+  document.getElementById('kosList').innerHTML = K.kosList().map(function (k) {
+    var on = k.id === K.activeKosId();
+    return '<div class="flex items-center gap-3 p-3 rounded-xl border ' + (on ? 'border-sky-800 bg-sky-950/40' : 'border-zinc-800 bg-zinc-950') + '">' +
+      '<div class="flex-1 min-w-0"><p class="text-sm font-bold truncate">' + K.esc(k.name) + '</p><p class="text-[11px] text-zinc-500 font-mono truncate">' + K.esc(k.id) + '</p></div>' +
+      (on ? '<span class="text-[11px] font-bold text-sky-300">AKTIF</span>'
+          : '<button onclick="KosHub.switchKos(\'' + k.id + '\')" class="text-xs px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-sky-500">Pakai</button>') + '</div>';
+  }).join('');
+  KosUI.icons();
+}
+function saveKey() {
+  var v = document.getElementById('naraKey').value.trim();
+  if (v && v !== '••••••••') KosHub.setKey(v);
+  document.getElementById('naraStatus').textContent = KosHub.getKey() ? '✓ Key tersimpan.' : 'Key masih kosong.';
+  KosUI.toast('Key tersimpan ✓');
+}
+async function testKey() {
+  var v = document.getElementById('naraKey').value.trim();
+  var st = document.getElementById('naraStatus');
+  if (v && v !== '••••••••') KosHub.setKey(v);
+  st.textContent = 'Menghubungi /api/bynara …';
+  try { await KosAI.testConnection(); st.textContent = '✓ Koneksi OK (' + KosAI.MODEL + ')'; }
+  catch (e) { st.textContent = '✗ ' + e.message; }
+}
+function mkKos() {
+  var v = document.getElementById('newKos').value.trim();
+  if (!v) return KosUI.toast('Isi nama kos');
+  KosHub.createKos(v);
+  document.getElementById('newKos').value = '';
+  KosUI.toast('Kos dibuat ✓');
+}
+function jnKos() {
+  var v = document.getElementById('joinKos').value.trim();
+  if (!v) return KosUI.toast('Isi Kos ID');
+  KosHub.joinKos(v);
+  document.getElementById('joinKos').value = '';
+  KosUI.toast('Join kos ✓');
+}
+function doExport() {
+  var blob = new Blob([KosHub.exportDB()], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'koshub-' + KosHub.activeKosId() + '-backup.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function doImport(ev) {
+  var f = ev.target.files[0]; if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    try { KosHub.importDB(rd.result); KosUI.toast('Import berhasil ✓'); }
+    catch (e) { KosUI.toast('Backup tidak valid'); }
+  };
+  rd.readAsText(f);
+}
+function doWipe() { if (confirm('Hapus SEMUA data kos aktif ini?')) { KosHub.wipeActive(); KosUI.toast('Data dihapus'); } }
+document.addEventListener('DOMContentLoaded', render);
+KosHub.onChange(render);
+</script>
+</body>
+</html>

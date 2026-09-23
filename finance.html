@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kas & Split Bill — KosHub OS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] } } } };</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="public/css/app.css" />
+<script src="public/js/state.js"></script>
+<script src="public/js/ai-client.js"></script>
+<script src="public/js/components.js"></script>
+</head>
+<body data-page="finance" class="bg-zinc-950 text-zinc-100 min-h-screen">
+<div id="kh-drawer" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/70" onclick="KosUI.toggleDrawer(false)"></div>
+  <div class="absolute left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-800 p-4 overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-extrabold">KosHub <span class="text-sky-400">OS</span></p>
+      <button onclick="KosUI.toggleDrawer(false)" class="p-2 rounded-lg border border-zinc-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <nav class="space-y-1.5"></nav>
+  </div>
+</div>
+<aside id="kh-sidebar" class="hidden lg:block fixed left-0 top-0 bottom-0 w-64 border-r border-zinc-800 bg-zinc-950 p-4 overflow-y-auto"></aside>
+<div class="lg:pl-64">
+  <header id="kh-topbar" class="sticky top-0 z-40 backdrop-blur bg-zinc-950/85 border-b border-zinc-800 px-4 py-3 flex items-center gap-3"></header>
+  <main class="px-4 py-5 max-w-5xl mx-auto pb-20">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="card p-4"><p class="text-[11px] font-bold text-zinc-500 uppercase">Bulan ini</p><p id="fTotal" class="text-xl font-extrabold text-emerald-400 mt-1">Rp0</p></div>
+      <div class="card p-4"><p class="text-[11px] font-bold text-zinc-500 uppercase">Transaksi</p><p id="fCount" class="text-xl font-extrabold mt-1">0</p></div>
+      <div class="card p-4"><p class="text-[11px] font-bold text-zinc-500 uppercase">Penalang aktif</p><p id="fPayers" class="text-xl font-extrabold mt-1">0</p></div>
+      <div class="card p-4"><p class="text-[11px] font-bold text-zinc-500 uppercase">Porsi / orang</p><p id="fShare" class="text-xl font-extrabold text-sky-400 mt-1">Rp0</p></div>
+    </div>
+
+    <div class="card p-5 mt-3">
+      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4 text-sky-400"></i>Balance Patungan Otomatis</h3>
+      <div id="balanceList" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3"></div>
+      <h4 class="font-bold text-xs text-zinc-400 mt-4 uppercase tracking-wide">Saran settlement (siapa bayar siapa)</h4>
+      <div id="settleList" class="mt-2 space-y-2"></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
+      <div class="card p-5"><h3 class="font-bold text-sm">Pengeluaran 14 Hari</h3><div class="h-56 mt-3"><canvas id="chartKas"></canvas></div></div>
+      <div class="card p-5"><h3 class="font-bold text-sm">Proporsi per Penanggung</h3><div class="h-56 mt-3"><canvas id="chartBy"></canvas></div></div>
+    </div>
+
+    <div class="card p-5 mt-3">
+      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-zinc-500"></i>
+          <input id="q" oninput="render()" placeholder="Cari judul / nama…" class="field pl-9" />
+        </div>
+        <select id="cat" onchange="render()" class="field sm:w-48">
+          <option value="">Semua kategori</option>
+        </select>
+        <button onclick="openModal(true)" class="px-4 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Tambah</button>
+      </div>
+      <div id="expenseList" class="mt-3 space-y-2"></div>
+    </div>
+  </main>
+</div>
+
+<div id="modal" class="hidden fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm p-4">
+  <div class="max-w-md mx-auto mt-20 rounded-2xl border border-zinc-700 bg-zinc-950 p-5 fade-in">
+    <div class="flex items-center gap-2">
+      <h3 class="font-bold">Tambah Transaksi</h3>
+      <button onclick="openModal(false)" class="ml-auto p-1.5 text-zinc-500 hover:text-zinc-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="grid gap-2.5 mt-4">
+      <input id="mTitle" class="field" placeholder="Judul (cth: Telur 1kg)" />
+      <div class="grid grid-cols-2 gap-2.5">
+        <input id="mAmount" type="number" min="0" class="field" placeholder="Nominal" />
+        <input id="mBy" class="field" placeholder="Ditalangin" />
+      </div>
+      <input id="mCat" class="field" placeholder="Kategori (Dapur / Iuran / …)" />
+      <button onclick="saveModal()" class="py-3 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold text-sm">Simpan Transaksi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+KosUI.setTitle('Kas & Split Bill');
+function openModal(o) { document.getElementById('modal').classList.toggle('hidden', !o); KosUI.icons(); }
+function saveModal() {
+  var t = document.getElementById('mTitle').value.trim();
+  var a = Number(document.getElementById('mAmount').value);
+  var b = document.getElementById('mBy').value.trim() || 'Penghuni';
+  var c = document.getElementById('mCat').value.trim() || 'Lainnya';
+  if (!t || !a || a <= 0) return KosUI.toast('Isi judul + nominal yang valid');
+  KosHub.addExpense({ title: t, amount: a, by: b, cat: c });
+  ['mTitle', 'mAmount', 'mBy', 'mCat'].forEach(function (id) { document.getElementById(id).value = ''; });
+  openModal(false); KosUI.toast('Transaksi tersimpan ✓');
+}
+var chK = null, chB = null;
+function last14() {
+  var days = [], map = {};
+  for (var i = 13; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); var k = d.toISOString().slice(0, 10); days.push(k); map[k] = 0; }
+  KosHub.store().expenses.forEach(function (e) { var k2 = new Date(e.date).toISOString().slice(0, 10); if (k2 in map) map[k2] += Number(e.amount || 0); });
+  return { labels: days.map(function (k) { return k.slice(5); }), values: days.map(function (k) { return map[k]; }) };
+}
+function render() {
+  var K = KosHub, s = K.store();
+  var q = (document.getElementById('q').value || '').toLowerCase();
+  var cat = document.getElementById('cat').value;
+  var cats = {};
+  s.expenses.forEach(function (e) { cats[e.cat || 'Lainnya'] = 1; });
+  var sel = document.getElementById('cat'), cur = sel.value;
+  sel.innerHTML = '<option value="">Semua kategori</option>' + Object.keys(cats).map(function (c) { return '<option>' + K.esc(c) + '</option>'; }).join('');
+  sel.value = cats[cur] ? cur : '';
+  cat = sel.value;
+  var rows = s.expenses.filter(function (e) {
+    return (!q || (e.title + ' ' + e.by).toLowerCase().indexOf(q) >= 0) && (!cat || (e.cat || 'Lainnya') === cat);
+  });
+  document.getElementById('fTotal').textContent = K.fmtRp(K.monthTotal());
+  document.getElementById('fCount').textContent = s.expenses.length;
+  var bal = K.balances(), st = K.settle();
+  document.getElementById('fPayers').textContent = bal.length;
+  document.getElementById('fShare').textContent = bal.length ? K.fmtRp(bal[0].share) : 'Rp0';
+  document.getElementById('balanceList').innerHTML = bal.map(function (b) {
+    return '<div class="p-3 rounded-xl border ' + (b.net >= 0 ? 'border-emerald-900 bg-emerald-950/40' : 'border-amber-900 bg-amber-950/30') + '">' +
+      '<p class="font-bold text-sm">' + K.esc(b.name) + '</p><p class="text-xs text-zinc-400">Nalangin ' + K.fmtRp(b.paid) + '</p>' +
+      '<p class="text-sm font-bold mt-1 ' + (b.net >= 0 ? 'text-emerald-400' : 'text-amber-400') + '">' + (b.net >= 0 ? 'Kembali +' + K.fmtRp(b.net) : 'Kurang ' + K.fmtRp(-b.net)) + '</p></div>';
+  }).join('') || '<p class="text-sm text-zinc-500">Belum ada data.</p>';
+  document.getElementById('settleList').innerHTML = st.map(function (x) {
+    return '<div class="flex items-center gap-2 p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-sm"><i data-lucide="arrow-right" class="w-4 h-4 text-sky-400"></i><b>' + K.esc(x.from) + '</b><span class="text-zinc-500">bayar ke</span><b>' + K.esc(x.to) + '</b><span class="ml-auto font-bold text-emerald-400">' + K.fmtRp(x.amount) + '</span></div>';
+  }).join('') || '<p class="text-xs text-zinc-500">Sudah lunas semua ✓</p>';
+  document.getElementById('expenseList').innerHTML = rows.map(function (e) {
+    return '<div class="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 bg-zinc-950">' +
+      '<div class="flex-1 min-w-0"><p class="text-sm font-semibold truncate">' + K.esc(e.title) + '</p>' +
+      '<p class="text-xs text-zinc-500">' + K.esc(e.by) + ' · ' + K.esc(e.cat || 'Lainnya') + ' · ' + new Date(e.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + '</p></div>' +
+      '<p class="text-sm font-bold text-emerald-400 whitespace-nowrap">' + K.fmtRp(e.amount) + '</p>' +
+      '<button onclick="KosHub.delExpense(\'' + e.id + '\')" class="p-1.5 text-zinc-600 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>';
+  }).join('') || '<p class="text-sm text-zinc-500">Tidak ada hasil.</p>';
+  if (window.Chart) {
+    Chart.defaults.color = '#71717a'; Chart.defaults.borderColor = '#27272a';
+    var d14 = last14();
+    if (chK) chK.destroy(); if (chB) chB.destroy();
+    chK = new Chart(document.getElementById('chartKas'), { type: 'bar', data: { labels: d14.labels, datasets: [{ data: d14.values, backgroundColor: '#34d399', borderRadius: 6 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false } });
+    var by = {};
+    s.expenses.forEach(function (e) { by[e.by] = (by[e.by] || 0) + Number(e.amount || 0); });
+    chB = new Chart(document.getElementById('chartBy'), { type: 'doughnut', data: { labels: Object.keys(by), datasets: [{ data: Object.values(by), backgroundColor: ['#0ea5e9', '#34d399', '#fbbf24', '#f472b6', '#a78bfa'] }] }, options: { maintainAspectRatio: false } });
+  }
+  KosUI.icons();
+}
+document.addEventListener('DOMContentLoaded', render);
+KosHub.onChange(render);
+</script>
+</body>
+</html>

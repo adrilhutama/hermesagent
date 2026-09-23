@@ -1,60 +1,76 @@
-# KosHub OS — Dashboard Anak Kos (Zero-Cost SaaS)
+# KosHub OS v2 — Multi-Page SaaS (Vercel)
 
-Single-file **production-ready SPA** tanpa backend server. 100% berjalan di browser HP maupun desktop, optimal untuk **Hugging Face Static Space (Free Tier)**. Terintegrasi **NaraRouter AI** (`agnes-2.5-flash`) untuk pencatatan bahasa natural + **Supabase JS Client** untuk sinkronisasi cloud gratis.
+Platform SaaS prosedural & modular untuk mengelola kos: **AI kas parser**, **split bill real-time**, **dapur tracker**, **rotasi piket**, **multi-tenant Kos ID**. Tanpa database server — LocalStorage-first (`koshub_db_v2`), AI via serverless proxy.
 
-## Fitur
-
-| Tab | Isi |
-|-----|-----|
-| **Overview** | KPI: Total Kas Bulan Ini, Item Dapur Kritis (stok ≤ 1), Piket Hari Ini + grafik 14 hari + transaksi terakhir |
-| **Kas & Split Bill** | Mutasi, nominal, siapa menalangi, balance utang-piutang otomatis (patungan rata), grafik harian + proporsi |
-| **Inventaris Dapur** | Status stok, badge KRITIS otomatis jika qty ≤ 1, tombol +/− instan |
-| **Jadwal Piket** | Checklist rotasi harian/mingguan, reset harian |
-| **Konfigurasi** | Input BYNARA_API_KEY, Supabase URL + Anon Key, Export/Import JSON |
-
-### Command Bar AI (Spotlight style)
-
-Ketik bebas, misal:
-
-- `Adril beli telur 1kg 28rb ditalangin sendiri`
-- `Minyak goreng sisa 0, beli baru 32rb oleh Budi`
-- `Bayar iuran sampah 15rb ditalangin Citra`
-
-Aplikasi `fetch POST` langsung ke `https://router.bynara.id/v1/chat/completions` (model `agnes-2.5-flash`), mengekstrak JSON murni (tanpa markdown) dengan skema:
-
-```json
-{ "type": "expense|inventory", "title": "string", "amount": "number", "by": "string", "qty": "number" }
-```
-
-Hasil otomatis tersimpan ke **LocalStorage** (dan ke Supabase bila key aktif). **Tanpa API key pun tetap jalan** via parser lokal fallback.
-
-## Tech — Zero Build Tooling (CDN)
-
-- Tailwind CSS v3, Chart.js 4, Lucide Icons, `@supabase/supabase-js` v2
-- Dark theme SaaS (slate-950/zinc-900, border zinc-800, aksen sky-500/emerald-400), font Plus Jakarta Sans
-- Data: LocalStorage-first (`koshub_db_v1`), Supabase opsional (tabel `expenses`, `inventory`, `chores`)
-
-## Deploy ke Hugging Face Static Space (gratis)
-
-1. Buat Space baru → pilih tipe **Static**.
-2. Upload **hanya** `index.html` (cukup 1 file, tanpa build/docker).
-3. Selesai — aplikasi langsung live di `https://<user>-<space>.hf.space`.
-
-Tidak ada Dockerfile / backend / env server. Semua config via UI web.
-
-## Konfigurasi via Web (tab Konfigurasi)
-
-1. **BYNARA_API_KEY**: paste key dari Bynara → *Simpan Key* → *Tes Koneksi AI*. Key hanya tersimpan di `localStorage` browser, dikirim hanya ke `router.bynara.id`.
-2. **Supabase** (opsional): buat project gratis di supabase.com → buat tabel `expenses`, `inventory`, `chores` → paste URL + anon key → *Simpan & Sync*.
-3. **Backup**: *Export JSON* / *Import JSON* kapan saja.
-
-## Struktur Repo
+## Arsitektur Sistem
 
 ```text
-index.html   # seluruh aplikasi (HTML+CSS+JS single-file)
-README.md    # dokumentasi ini
-.gitignore
+Browser (HP/desktop)
+ ├── landing.html        → public landing (route /)
+ ├── index.html          → overview workspace (route /app)
+ ├── finance.html        → kas & split bill (route /finance)
+ ├── inventory.html      → kulkas & dapur (route /inventory)
+ ├── schedule.html       → piket (route /schedule)
+ ├── settings.html       → key + tenant + backup (route /settings)
+ ├── public/js/state.js      → store terpusat, event koshub:update
+ ├── public/js/ai-client.js  → parser AI + fallback offline
+ ├── public/js/components.js → sidebar/drawer, topbar, spotlight Ctrl+K
+ └── public/css/app.css       → theme pelengkap Tailwind
+        │ POST /api/bynara {model, messages} + Authorization: Bearer <key>
+        ▼
+Vercel Serverless (api/bynara.js) ──forward──▶ https://router.bynara.id/v1/chat/completions
+                                                   model: agnes-2.5-flash
 ```
+
+**Kenapa proxy?** Browser tidak bisa `fetch` langsung ke NaraRouter tanpa isu CORS, dan key tidak boleh hardcode di HTML. Proxy meneruskan `Authorization` dari request (atau `env BYNARA_API_KEY`), mengembalikan JSON upstream apa adanya.
+
+## Struktur Folder
+
+```text
+api/
+  bynara.js          # serverless proxy NaraRouter (Node.js)
+public/
+  js/state.js        # KosHub global: tenant, CRUD, balance, settle, backup
+  js/ai-client.js    # KosAI global: parse/apply/testConnection
+  js/components.js   # KosUI global: chrome + spotlight + toast
+  css/app.css        # card, nav-link, field, animasi
+landing.html index.html finance.html inventory.html schedule.html settings.html
+vercel.json          # cleanUrls + rewrites rute bersih
+.gitignore
+README.md
+```
+
+## Deploy ke Vercel
+
+```bash
+# 1. Push repo ini ke GitHub (sudah di main)
+# 2. Vercel → Add New Project → import repo → Deploy (tanpa setting tambahan)
+# 3. (Opsional) tambah env BYNARA_API_KEY di Project Settings → Environment Variables
+#    →Redeploy. Jika diisi, semua penghuni bisa pakai AI tanpa input key manual.
+```
+
+Rute bersih aktif otomatis: `/` `→ landing`, `/app` `→ overview`, `/finance`, `/inventory`, `/schedule`, `/settings`.
+
+Jalankan lokal:
+
+```bash
+npx vercel dev
+# atau preview statis: npx serve .   (halaman jalan, hanya /api/bynara butuh vercel dev)
+```
+
+## Panduan Penggunaan
+
+1. **Buka `/app`** — data demo langsung tampil (LocalStorage).
+2. **Spotlight AI (`Ctrl+K` / `Cmd+K`, di halaman mana pun)** — ketik bebas:
+   - `Adril beli telur 1kg 28rb ditalangin sendiri` → expense tercatat
+   - `Minyak goreng sisa 0, beli baru 32rb oleh Budi` → stok + kas
+   - `Bayar iuran sampah 15rb ditalangin Citra` → expense tercatat
+
+   Skema ekstraksi: `{type: "expense"|"inventory", title, amount, by, qty}`.
+   Tanpa API key → parser regex offline tetap jalan.
+3. **`/settings`** — paste `BYNARA_API_KEY` → *Uji Koneksi* (menghubungi `POST /api/bynara`). Key hanya di `localStorage`.
+4. **Multi-kos** — buat/switch/join Kos ID di `/settings`. Samakan ID di semua HP penghuni untuk konteks yang sama. Backup via Export/Import `.json`.
+5. **Split bill** — `/finance` menampilkan balance patungan rata + saran transfer greedy (siapa bayar siapa).
 
 ## Lisensi
 

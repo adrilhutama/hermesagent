@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kulkas & Dapur — KosHub OS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] } } } };</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="public/css/app.css" />
+<script src="public/js/state.js"></script>
+<script src="public/js/ai-client.js"></script>
+<script src="public/js/components.js"></script>
+</head>
+<body data-page="inventory" class="bg-zinc-950 text-zinc-100 min-h-screen">
+<div id="kh-drawer" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/70" onclick="KosUI.toggleDrawer(false)"></div>
+  <div class="absolute left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-800 p-4 overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-extrabold">KosHub <span class="text-sky-400">OS</span></p>
+      <button onclick="KosUI.toggleDrawer(false)" class="p-2 rounded-lg border border-zinc-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <nav class="space-y-1.5"></nav>
+  </div>
+</div>
+<aside id="kh-sidebar" class="hidden lg:block fixed left-0 top-0 bottom-0 w-64 border-r border-zinc-800 bg-zinc-950 p-4 overflow-y-auto"></aside>
+<div class="lg:pl-64">
+  <header id="kh-topbar" class="sticky top-0 z-40 backdrop-blur bg-zinc-950/85 border-b border-zinc-800 px-4 py-3 flex items-center gap-3"></header>
+  <main class="px-4 py-5 max-w-5xl mx-auto pb-20">
+    <div class="card p-5">
+      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>Tambah Stok</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-3">
+        <input id="iName" class="field" placeholder="Nama bahan" />
+        <input id="iQty" type="number" min="0" value="1" class="field" />
+        <input id="iUnit" class="field" placeholder="Satuan (kg/pcs)" />
+        <button onclick="addInv()" class="rounded-xl bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold text-sm px-4 py-2.5">Simpan</button>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4" id="filterTabs">
+      <button data-f="all" onclick="setFilter('all')" class="px-4 py-2 rounded-xl border text-sm font-semibold">Semua</button>
+      <button data-f="restock" onclick="setFilter('restock')" class="px-4 py-2 rounded-xl border text-sm font-semibold">Perlu Restock</button>
+      <button data-f="safe" onclick="setFilter('safe')" class="px-4 py-2 rounded-xl border text-sm font-semibold">Aman</button>
+    </div>
+    <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3"></div>
+  </main>
+</div>
+<script>
+KosUI.setTitle('Kulkas & Dapur');
+var filter = 'all';
+function setFilter(f) {
+  filter = f;
+  document.querySelectorAll('#filterTabs button').forEach(function (b) {
+    var on = b.dataset.f === f;
+    b.className = 'px-4 py-2 rounded-xl border text-sm font-semibold ' + (on ? 'bg-sky-500 border-sky-500 text-zinc-950' : 'border-zinc-800 bg-zinc-900 text-zinc-300');
+  });
+  render();
+}
+function addInv() {
+  var name = document.getElementById('iName').value.trim();
+  if (!name) return KosUI.toast('Isi nama bahan');
+  KosHub.addInventory({ name: name, qty: Number(document.getElementById('iQty').value) || 0, unit: document.getElementById('iUnit').value.trim() || 'pcs' });
+  document.getElementById('iName').value = ''; document.getElementById('iQty').value = 1; document.getElementById('iUnit').value = '';
+  KosUI.toast('Stok tersimpan ✓');
+}
+function render() {
+  var K = KosHub;
+  var items = K.store().inventory.filter(function (i) {
+    if (filter === 'restock') return Number(i.qty) <= 1;
+    if (filter === 'safe') return Number(i.qty) > 1;
+    return true;
+  });
+  document.getElementById('grid').innerHTML = items.map(function (i) {
+    var kritis = Number(i.qty) <= 1;
+    return '<div class="card p-4 ' + (kritis ? '!border-red-900' : '') + '">' +
+      '<div class="flex items-start gap-2"><div class="flex-1 min-w-0"><p class="font-bold text-sm truncate">' + K.esc(i.name) + '</p>' +
+      '<p class="text-xs text-zinc-500">' + i.qty + ' ' + K.esc(i.unit) + '</p></div>' +
+      (kritis
+        ? '<span class="text-[11px] font-bold px-2 py-1 rounded-full bg-red-950 border border-red-800 text-red-300 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>KRITIS</span>'
+        : '<span class="text-[11px] px-2 py-1 rounded-full bg-emerald-950 border border-emerald-900 text-emerald-300">Aman</span>') + '</div>' +
+      '<div class="flex gap-2 mt-3"><button onclick="KosHub.bumpInv(\'' + i.id + '\',-1)" class="flex-1 py-2 rounded-lg border border-zinc-700 bg-zinc-900 font-bold">−</button>' +
+      '<button onclick="KosHub.bumpInv(\'' + i.id + '\',1)" class="flex-1 py-2 rounded-lg bg-sky-500 text-zinc-950 font-bold">+</button>' +
+      '<button onclick="KosHub.delInv(\'' + i.id + '\')" class="px-3 py-2 rounded-lg text-zinc-600 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>';
+  }).join('') || '<p class="text-sm text-zinc-500 col-span-full">Tidak ada item pada filter ini.</p>';
+  KosUI.icons();
+}
+document.addEventListener('DOMContentLoaded', function () { setFilter('all'); });
+KosHub.onChange(render);
+</script>
+</body>
+</html>

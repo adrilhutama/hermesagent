@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KosHub OS — Kelola Kos Bareng AI</title>
+<meta name="description" content="KosHub OS: AI kas parser, real-time split bill, zero-waste dapur tracker. Gratis, tanpa backend." />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] } } } };</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="public/css/app.css" />
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+<header class="sticky top-0 z-40 backdrop-blur bg-zinc-950/85 border-b border-zinc-800">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-400 flex items-center justify-center font-extrabold text-zinc-950 text-lg">K</div>
+    <p class="font-extrabold text-lg">KosHub <span class="text-sky-400">OS</span></p>
+    <div class="ml-auto flex items-center gap-2">
+      <a href="/app" class="hidden sm:inline-flex text-sm font-semibold text-zinc-400 hover:text-zinc-100 px-3 py-2">Masuk</a>
+      <a href="/app" class="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-zinc-950 text-sm font-bold">Buka Workspace</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4">
+  <!-- HERO -->
+  <section class="py-14 sm:py-20 grid lg:grid-cols-2 gap-10 items-center">
+    <div class="fade-in">
+      <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-sky-800 bg-sky-950 text-sky-300">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>AI KAS PARSER · SPLIT BILL · DAPUR TRACKER
+      </span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold leading-[1.1] mt-4">Satu workspace<br />untuk <span class="text-sky-400">seluruh kos.</span></h1>
+      <p class="text-zinc-400 mt-4 max-w-md">Catat pengeluaran cukup dengan mengetik bebas — AI yang mem-parsing. Patungan dihitung otomatis, stok dapur terpantau, piket jalan sendiri.</p>
+      <div class="flex flex-wrap gap-3 mt-6">
+        <a href="/app" class="px-6 py-3.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-zinc-950 font-bold flex items-center gap-2">
+          Buka Workspace<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+        <a href="/finance" class="px-6 py-3.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 font-bold">Lihat Modul Kas</a>
+      </div>
+      <div class="flex items-center gap-4 mt-6 text-xs text-zinc-500">
+        <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>Gratis</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>Tanpa install</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>Jalan di HP</span>
+      </div>
+    </div>
+    <!-- dashboard preview -->
+    <div class="card p-5 fade-in">
+      <div class="flex items-center gap-2 pb-3 border-b border-zinc-800">
+        <span class="w-3 h-3 rounded-full bg-red-500/70"></span><span class="w-3 h-3 rounded-full bg-amber-400/70"></span><span class="w-3 h-3 rounded-full bg-emerald-400/70"></span>
+        <span class="ml-2 text-xs text-zinc-500 font-mono">koshub — overview</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800"><p class="text-[10px] text-zinc-500 font-bold">KAS BULAN INI</p><p class="font-extrabold text-emerald-400">Rp43rb</p></div>
+        <div class="p-3 rounded-xl bg-zinc-950 border border-amber-800"><p class="text-[10px] text-zinc-500 font-bold">KRITIS</p><p class="font-extrabold text-amber-400">2 item</p></div>
+        <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800"><p class="text-[10px] text-zinc-500 font-bold">PIKET</p><p class="font-extrabold">Kamis</p></div>
+      </div>
+      <div class="mt-3 p-3 rounded-xl bg-sky-950/60 border border-sky-900 flex items-center gap-3">
+        <i data-lucide="sparkles" class="w-4 h-4 text-sky-400 shrink-0"></i>
+        <p class="text-xs text-sky-200 font-mono truncate">"Adril beli telur 1kg 28rb ditalangin sendiri" → ✓ tercatat</p>
+      </div>
+      <div class="mt-3 space-y-2">
+        <div class="flex items-center gap-3 p-2.5 rounded-xl border border-zinc-800 bg-zinc-950"><div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-900 flex items-center justify-center"><i data-lucide="receipt" class="w-4 h-4 text-emerald-400"></i></div><div class="flex-1"><p class="text-xs font-bold">Telur 1kg</p><p class="text-[11px] text-zinc-500">Adril</p></div><p class="text-xs font-bold text-emerald-400">Rp28.000</p></div>
+        <div class="flex items-center gap-3 p-2.5 rounded-xl border border-zinc-800 bg-zinc-950"><div class="w-8 h-8 rounded-lg bg-amber-950 border border-amber-900 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i></div><div class="flex-1"><p class="text-xs font-bold">Minyak goreng</p><p class="text-[11px] text-zinc-500">stok 0 — restock!</p></div><span class="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-950 border border-amber-800 text-amber-300">KRITIS</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALUE PROPS -->
+  <section class="grid sm:grid-cols-3 gap-3 pb-6">
+    <div class="card p-6"><div class="w-11 h-11 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-sky-400"></i></div><h3 class="font-bold mt-4">AI Kas Parser</h3><p class="text-sm text-zinc-400 mt-1.5">Ketik "beli telur 28rb ditalangin Adril" — model <code class="text-emerald-400">agnes-2.5-flash</code> via proxy <code class="text-zinc-300">/api/bynara</code> mengubahnya jadi transaksi rapi.</p></div>
+    <div class="card p-6"><div class="w-11 h-11 rounded-xl bg-emerald-950 border border-emerald-800 flex items-center justify-center"><i data-lucide="scale" class="w-5 h-5 text-emerald-400"></i></div><h3 class="font-bold mt-4">Real-time Split Bill</h3><p class="text-sm text-zinc-400 mt-1.5">Siapa nalangin berapa tercatat otomatis. Balance patungan + saran transfer settlement dihitung greedy — anti ribut akhir bulan.</p></div>
+    <div class="card p-6"><div class="w-11 h-11 rounded-xl bg-amber-950 border border-amber-800 flex items-center justify-center"><i data-lucide="refrigerator" class="w-5 h-5 text-amber-400"></i></div><h3 class="font-bold mt-4">Zero-waste Dapur</h3><p class="text-sm text-zinc-400 mt-1.5">Stok ≤ 1 otomatis ber-badge KRITIS. Counter +/− instan, filter "Perlu Restock" — tidak ada lagi minyak habis mendadak.</p></div>
+  </section>
+
+  <!-- STEPS -->
+  <section class="card p-6 sm:p-8 mb-6">
+    <h2 class="font-extrabold text-xl">Mulai dalam 60 detik</h2>
+    <div class="grid sm:grid-cols-3 gap-4 mt-4 text-sm">
+      <div class="flex gap-3"><span class="shrink-0 w-8 h-8 rounded-lg bg-sky-500 text-zinc-950 font-extrabold flex items-center justify-center">1</span><p class="text-zinc-300"><b>Buka Workspace</b> — data demo langsung tampil, tersimpan lokal di browser.</p></div>
+      <div class="flex gap-3"><span class="shrink-0 w-8 h-8 rounded-lg bg-sky-500 text-zinc-950 font-extrabold flex items-center justify-center">2</span><p class="text-zinc-300"><b>Tempel BYNARA_API_KEY</b> di Pengaturan untuk menyalakan AI penuh (atau tetap pakai parser lokal).</p></div>
+      <div class="flex gap-3"><span class="shrink-0 w-8 h-8 rounded-lg bg-sky-500 text-zinc-950 font-extrabold flex items-center justify-center">3</span><p class="text-zinc-300"><b>Undang sekos</b> — samakan Kos ID di menu Pengaturan, backup JSON kapan saja.</p></div>
+    </div>
+    <a href="/app" class="mt-6 inline-flex px-6 py-3.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold items-center gap-2">Buka Workspace Sekarang<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+  </section>
+
+  <footer class="text-center text-xs text-zinc-600 pb-10">KosHub OS · multi-page SaaS · deploy di Vercel · MIT 🍳</footer>
+</main>
+<script>lucide.createIcons();</script>
+</body>
+</html>

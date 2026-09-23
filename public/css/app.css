@@ -1,0 +1,47 @@
+/* KosHub OS — shared stylesheet (melengkapi Tailwind CDN) */
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #09090b; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+.card {
+  background: #09090b;
+  border: 1px solid #27272a;
+  border-radius: 1rem;
+}
+
+.nav-link { transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.nav-link.active {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
+}
+.nav-link:not(.active):hover { border-color: #0ea5e9; }
+
+.fade-in { animation: fadeIn .25s ease-in-out; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.spot-glow:focus-within {
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, .5), 0 8px 40px -8px rgba(14, 165, 233, .45);
+}
+
+input, select, textarea { color-scheme: dark; }
+input::placeholder, textarea::placeholder { color: #52525b; }
+
+.field {
+  width: 100%;
+  background: #09090b;
+  border: 1px solid #27272a;
+  border-radius: .75rem;
+  padding: .65rem .8rem;
+  font-size: .875rem;
+  outline: none;
+}
+.field:focus { border-color: #0ea5e9; }

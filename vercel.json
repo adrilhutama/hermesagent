@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/landing.html" },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/finance", "destination": "/finance.html" },
+    { "source": "/inventory", "destination": "/inventory.html" },
+    { "source": "/schedule", "destination": "/schedule.html" },
+    { "source": "/settings", "destination": "/settings.html" }
+  ]
+}

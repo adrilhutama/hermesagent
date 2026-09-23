@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Piket & Tugas — KosHub OS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] } } } };</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="public/css/app.css" />
+<script src="public/js/state.js"></script>
+<script src="public/js/ai-client.js"></script>
+<script src="public/js/components.js"></script>
+</head>
+<body data-page="schedule" class="bg-zinc-950 text-zinc-100 min-h-screen">
+<div id="kh-drawer" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/70" onclick="KosUI.toggleDrawer(false)"></div>
+  <div class="absolute left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-800 p-4 overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-extrabold">KosHub <span class="text-sky-400">OS</span></p>
+      <button onclick="KosUI.toggleDrawer(false)" class="p-2 rounded-lg border border-zinc-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <nav class="space-y-1.5"></nav>
+  </div>
+</div>
+<aside id="kh-sidebar" class="hidden lg:block fixed left-0 top-0 bottom-0 w-64 border-r border-zinc-800 bg-zinc-950 p-4 overflow-y-auto"></aside>
+<div class="lg:pl-64">
+  <header id="kh-topbar" class="sticky top-0 z-40 backdrop-blur bg-zinc-950/85 border-b border-zinc-800 px-4 py-3 flex items-center gap-3"></header>
+  <main class="px-4 py-5 max-w-5xl mx-auto pb-20">
+    <div class="card p-5">
+      <div class="flex items-center gap-2">
+        <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="calendar-check" class="w-4 h-4 text-sky-400"></i>Rotasi Piket — <span id="hariIni"></span></h3>
+        <button onclick="KosHub.resetChores();KosUI.toast('Siklus di-reset ✓')" class="ml-auto text-xs px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:border-amber-400">Reset siklus</button>
+      </div>
+      <div class="w-full bg-zinc-900 border border-zinc-800 rounded-full h-2.5 mt-4 overflow-hidden"><div id="bar" class="h-full bg-emerald-400 transition-all" style="width:0%"></div></div>
+      <p id="barTxt" class="text-xs text-zinc-500 mt-1.5">—</p>
+      <div class="flex gap-2 mt-3">
+        <input id="choreInput" class="field flex-1" placeholder="Tugas baru (cth: Sabtu — semua: kerja bakti)" />
+        <button onclick="addChore()" class="rounded-xl bg-sky-500 hover:bg-sky-400 text-zinc-950 font-bold text-sm px-4 py-2.5">Tambah</button>
+      </div>
+      <div id="list" class="mt-3 space-y-2"></div>
+    </div>
+  </main>
+</div>
+<script>
+KosUI.setTitle('Piket & Tugas');
+function addChore() {
+  var v = document.getElementById('choreInput').value.trim();
+  if (!v) return KosUI.toast('Isi tugas dulu');
+  KosHub.addChore(v);
+  document.getElementById('choreInput').value = '';
+  KosUI.toast('Tugas ditambahkan ✓');
+}
+function render() {
+  var K = KosHub, s = K.store();
+  document.getElementById('hariIni').textContent = K.todayID();
+  var done = s.chores.filter(function (c) { return c.done; }).length;
+  var pct = s.chores.length ? Math.round((done / s.chores.length) * 100) : 0;
+  document.getElementById('bar').style.width = pct + '%';
+  document.getElementById('barTxt').textContent = done + '/' + s.chores.length + ' selesai (' + pct + '%)';
+  document.getElementById('list').innerHTML = s.chores.map(function (c) {
+    return '<label class="flex items-center gap-3 p-3 rounded-xl border ' + (c.done ? 'border-emerald-900 bg-emerald-950/30' : 'border-zinc-800 bg-zinc-950') + ' cursor-pointer">' +
+      '<input type="checkbox" ' + (c.done ? 'checked' : '') + ' onchange="KosHub.toggleChore(\'' + c.id + '\')" class="w-5 h-5 accent-emerald-400" />' +
+      '<span class="flex-1 text-sm ' + (c.done ? 'line-through text-zinc-500' : 'font-medium') + '">' + K.esc(c.task) + '</span>' +
+      '<button onclick="KosHub.delChore(\'' + c.id + '\')" class="p-1.5 text-zinc-600 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button></label>';
+  }).join('') || '<p class="text-sm text-zinc-500">Belum ada jadwal.</p>';
+  KosUI.icons();
+}
+document.getElementById('choreInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') addChore(); });
+document.addEventListener('DOMContentLoaded', render);
+KosHub.onChange(render);
+</script>
+</body>
+</html>

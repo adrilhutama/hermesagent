@@ -3,597 +3,97 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>KosHub OS — Dashboard Anak Kos</title>
-<meta name="description" content="KosHub OS: dashboard kos zero-cost. Kas, split bill, inventaris dapur, piket, AI NaraRouter. 100% static, deploy ke Hugging Face Static Space." />
+<title>Overview — KosHub OS</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
-      colors: { base: '#020617' }
-    }
-  }
-}
-</script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] } } } };</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<style>
-  body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: #09090b; }
-  ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 8px; }
-  .tab-btn.active { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
-  .cmd-glow:focus-within { box-shadow: 0 0 0 2px rgba(14,165,233,.5), 0 8px 40px -8px rgba(14,165,233,.45); }
-  .card { background: #09090b; border: 1px solid #27272a; border-radius: 1rem; }
-  .fade-in { animation: fadeIn .25s ease-in-out; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none;} }
-  input, select, textarea { color-scheme: dark; }
-</style>
+<link rel="stylesheet" href="public/css/app.css" />
+<script src="public/js/state.js"></script>
+<script src="public/js/ai-client.js"></script>
+<script src="public/js/components.js"></script>
 </head>
-<body class="bg-slate-950 text-zinc-100 min-h-screen">
-
-<!-- HEADER -->
-<header class="sticky top-0 z-40 backdrop-blur bg-slate-950/85 border-b border-zinc-800">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-400 flex items-center justify-center font-extrabold text-slate-950 text-lg">K</div>
-    <div class="flex-1">
-      <h1 class="font-extrabold text-lg leading-tight">KosHub <span class="text-sky-400">OS</span></h1>
-      <p class="text-xs text-zinc-400">Zero-cost SaaS · Static · NaraRouter AI + Supabase</p>
+<body data-page="index" class="bg-zinc-950 text-zinc-100 min-h-screen">
+<div id="kh-drawer" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/70" onclick="KosUI.toggleDrawer(false)"></div>
+  <div class="absolute left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-800 p-4 overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-extrabold">KosHub <span class="text-sky-400">OS</span></p>
+      <button onclick="KosUI.toggleDrawer(false)" class="p-2 rounded-lg border border-zinc-800"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-    <div class="hidden sm:flex items-center gap-2 text-xs text-zinc-400">
-      <span id="cloudBadge" class="px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900">● Lokal</span>
-      <span id="aiBadge" class="px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900">● AI off</span>
-    </div>
-    <button onclick="showTab('config')" class="p-2 rounded-lg border border-zinc-800 bg-zinc-900 hover:border-sky-500" title="Pengaturan">
-      <i data-lucide="settings-2" class="w-5 h-5"></i>
-    </button>
+    <nav class="space-y-1.5"></nav>
   </div>
-</header>
-
-<div class="max-w-6xl mx-auto px-4 pb-24">
-
-  <!-- AI COMMAND BAR -->
-  <section class="mt-5 card p-4 sm:p-5 cmd-glow transition-shadow border-zinc-800">
-    <div class="flex items-center gap-2 mb-2">
-      <i data-lucide="sparkles" class="w-4 h-4 text-sky-400"></i>
-      <p class="text-sm font-bold">Command Bar AI <span class="text-zinc-500 font-medium">— ketik bebas, AI yang catat</span></p>
-      <span class="ml-auto text-[11px] text-zinc-500 hidden sm:inline">model: <code class="text-emerald-400">agnes-2.5-flash</code></span>
-    </div>
-    <div class="flex flex-col sm:flex-row gap-2">
-      <div class="relative flex-1">
-        <i data-lucide="terminal" class="w-4 h-4 absolute left-3 top-3.5 text-zinc-500"></i>
-        <input id="aiInput" type="text" placeholder='Cth: "Adril beli telur 1kg 28rb ditalangin sendiri"'
-          class="w-full bg-slate-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-3 text-sm outline-none focus:border-sky-500 placeholder:text-zinc-600" />
-      </div>
-      <button id="aiBtn" onclick="processAI()"
-        class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2">
-        <i data-lucide="zap" class="w-4 h-4"></i> Proses AI
-      </button>
-    </div>
-    <div class="flex flex-wrap gap-2 mt-3">
-      <button onclick="fillExample(this)" class="text-xs px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900 hover:border-sky-500 text-zinc-300">Adril beli telur 1kg 28rb ditalangin sendiri</button>
-      <button onclick="fillExample(this)" class="text-xs px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900 hover:border-sky-500 text-zinc-300">Minyak goreng sisa 0, beli baru 32rb oleh Budi</button>
-      <button onclick="fillExample(this)" class="text-xs px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900 hover:border-sky-500 text-zinc-300">Bayar iuran sampah 15rb ditalangin Citra</button>
-    </div>
-    <p id="aiStatus" class="text-xs text-zinc-500 mt-2">Tanpa API key pun tetap jalan (parser lokal). Isi key di tab Konfigurasi untuk AI penuh.</p>
-  </section>
-
-  <!-- TABS -->
-  <nav class="mt-5 flex gap-2 overflow-x-auto pb-1" id="tabNav">
-    <button data-tab="overview" onclick="showTab('overview')" class="tab-btn active shrink-0 px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-semibold flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Overview</button>
-    <button data-tab="kas" onclick="showTab('kas')" class="tab-btn shrink-0 px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-semibold flex items-center gap-2"><i data-lucide="wallet" class="w-4 h-4"></i>Kas & Split Bill</button>
-    <button data-tab="dapur" onclick="showTab('dapur')" class="tab-btn shrink-0 px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-semibold flex items-center gap-2"><i data-lucide="refrigerator" class="w-4 h-4"></i>Dapur</button>
-    <button data-tab="piket" onclick="showTab('piket')" class="tab-btn shrink-0 px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-semibold flex items-center gap-2"><i data-lucide="calendar-check" class="w-4 h-4"></i>Piket</button>
-    <button data-tab="config" onclick="showTab('config')" class="tab-btn shrink-0 px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-semibold flex items-center gap-2"><i data-lucide="plug" class="w-4 h-4"></i>Konfigurasi</button>
-  </nav>
-
-  <!-- OVERVIEW -->
-  <section id="tab-overview" class="tab-panel mt-4 fade-in">
+</div>
+<aside id="kh-sidebar" class="hidden lg:block fixed left-0 top-0 bottom-0 w-64 border-r border-zinc-800 bg-zinc-950 p-4 overflow-y-auto"></aside>
+<div class="lg:pl-64">
+  <header id="kh-topbar" class="sticky top-0 z-40 backdrop-blur bg-zinc-950/85 border-b border-zinc-800 px-4 py-3 flex items-center gap-3"></header>
+  <main class="px-4 py-5 max-w-5xl mx-auto pb-20">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div class="card p-5">
-        <div class="flex items-center gap-2 text-zinc-400 text-xs font-semibold uppercase tracking-wide"><i data-lucide="banknote" class="w-4 h-4 text-emerald-400"></i>Total Kas Bulan Ini</div>
+        <p class="text-[11px] font-bold uppercase tracking-wide text-zinc-500 flex items-center gap-1.5"><i data-lucide="banknote" class="w-4 h-4 text-emerald-400"></i>Total Kas Bulan Ini</p>
         <p id="kpiKas" class="text-2xl font-extrabold mt-2 text-emerald-400">Rp0</p>
-        <p id="kpiKasSub" class="text-xs text-zinc-500 mt-1">0 transaksi</p>
+        <p id="kpiKasSub" class="text-xs text-zinc-500 mt-1">—</p>
       </div>
       <div class="card p-5">
-        <div class="flex items-center gap-2 text-zinc-400 text-xs font-semibold uppercase tracking-wide"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>Item Dapur Kritis</div>
+        <p class="text-[11px] font-bold uppercase tracking-wide text-zinc-500 flex items-center gap-1.5"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>Item Dapur Kritis</p>
         <p id="kpiKritis" class="text-2xl font-extrabold mt-2 text-amber-400">0</p>
-        <p id="kpiKritisSub" class="text-xs text-zinc-500 mt-1">stok ≤ 1</p>
+        <p id="kpiKritisSub" class="text-xs text-zinc-500 mt-1">—</p>
       </div>
       <div class="card p-5">
-        <div class="flex items-center gap-2 text-zinc-400 text-xs font-semibold uppercase tracking-wide"><i data-lucide="clipboard-list" class="w-4 h-4 text-sky-400"></i>Piket Hari Ini</div>
+        <p class="text-[11px] font-bold uppercase tracking-wide text-zinc-500 flex items-center gap-1.5"><i data-lucide="clipboard-list" class="w-4 h-4 text-sky-400"></i>Piket Hari Ini</p>
         <p id="kpiPiket" class="text-2xl font-extrabold mt-2">—</p>
         <p id="kpiPiketSub" class="text-xs text-zinc-500 mt-1">—</p>
       </div>
     </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-      <div class="card p-5">
-        <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-sky-400"></i>Pengeluaran 14 Hari Terakhir</h3>
-        <div class="h-56 mt-3"><canvas id="chartOverview"></canvas></div>
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mt-3">
+      <div class="card p-5 lg:col-span-3">
+        <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-sky-400"></i>Aktivitas Terkini</h3>
+        <div id="activityList" class="mt-3 space-y-2"></div>
       </div>
-      <div class="card p-5">
-        <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-emerald-400"></i>Transaksi Terakhir</h3>
-        <div id="recentList" class="mt-3 space-y-2"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- KAS -->
-  <section id="tab-kas" class="tab-panel mt-4 hidden fade-in">
-    <div class="card p-5">
-      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>Tambah Transaksi Manual</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-3">
-        <input id="expTitle" placeholder="Judul (cth: Telur 1kg)" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <input id="expAmount" type="number" min="0" placeholder="Nominal (cth: 28000)" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <input id="expBy" placeholder="Ditalangin (cth: Adril)" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <button onclick="addExpense()" class="rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-sm px-4 py-2.5">Simpan</button>
+      <div class="card p-5 lg:col-span-2">
+        <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>Quick Actions</h3>
+        <div class="grid gap-2 mt-3">
+          <button onclick="KosUI.openSpotlight()" class="w-full px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-zinc-950 font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i>Catat via AI <kbd class="text-[10px] bg-zinc-950/20 rounded px-1.5 py-0.5 font-mono">Ctrl K</kbd></button>
+          <a href="/finance" class="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-emerald-400 font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>Tambah Pengeluaran</a>
+          <a href="/inventory" class="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-amber-400 font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="refrigerator" class="w-4 h-4 text-amber-400"></i>Cek Stok Dapur</a>
+          <a href="/schedule" class="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="calendar-check" class="w-4 h-4 text-sky-400"></i>Lihat Piket</a>
+        </div>
+        <h3 class="font-bold text-sm mt-5 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-zinc-400"></i>Piket Belum Selesai</h3>
+        <div id="chorePreview" class="mt-2 space-y-2"></div>
       </div>
     </div>
-    <div class="card p-5 mt-3">
-      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4 text-sky-400"></i>Balance Utang-Piutang Otomatis (patungan rata)</h3>
-      <div id="balanceList" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3"></div>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-      <div class="card p-5"><h3 class="font-bold text-sm">Grafik Pengeluaran Harian</h3><div class="h-56 mt-3"><canvas id="chartKas"></canvas></div></div>
-      <div class="card p-5"><h3 class="font-bold text-sm">Proporsi per Penanggung</h3><div class="h-56 mt-3"><canvas id="chartBy"></canvas></div></div>
-    </div>
-    <div class="card p-5 mt-3">
-      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 text-zinc-400"></i>Semua Mutasi</h3>
-      <div id="expenseList" class="mt-3 space-y-2"></div>
-    </div>
-  </section>
-
-  <!-- DAPUR -->
-  <section id="tab-dapur" class="tab-panel mt-4 hidden fade-in">
-    <div class="card p-5">
-      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>Tambah Stok</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-3">
-        <input id="invName" placeholder="Nama bahan (cth: Telur)" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <input id="invQty" type="number" min="0" value="1" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <input id="invUnit" placeholder="Satuan (kg/pcs/butir)" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <button onclick="addInventory()" class="rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-sm px-4 py-2.5">Simpan</button>
-      </div>
-    </div>
-    <div id="inventoryList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3"></div>
-  </section>
-
-  <!-- PIKET -->
-  <section id="tab-piket" class="tab-panel mt-4 hidden fade-in">
-    <div class="card p-5">
-      <div class="flex items-center gap-2">
-        <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="calendar-check" class="w-4 h-4 text-sky-400"></i>Jadwal Piket Rotasi</h3>
-        <button onclick="resetChores()" class="ml-auto text-xs px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:border-amber-400">Reset harian</button>
-      </div>
-      <div class="flex gap-2 mt-3">
-        <input id="choreInput" placeholder="Tugas baru (cth: Senin — Adril: pel lantai)" class="flex-1 bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <button onclick="addChore()" class="rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm px-4 py-2.5">Tambah</button>
-      </div>
-      <div id="choreList" class="mt-3 space-y-2"></div>
-    </div>
-  </section>
-
-  <!-- CONFIG -->
-  <section id="tab-config" class="tab-panel mt-4 hidden fade-in">
-    <div class="card p-5">
-      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-amber-400"></i>Integrasi AI — NaraRouter (BYNARA_API_KEY)</h3>
-      <p class="text-xs text-zinc-500 mt-1">Key hanya tersimpan di <code class="text-zinc-300">localStorage</code> browser ini. Tidak dikirim ke mana pun kecuali <code class="text-emerald-400">router.bynara.id</code>.</p>
-      <input id="cfgNara" type="password" placeholder="BYNARA_API_KEY — paste di sini" class="mt-3 w-full bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-      <div class="flex flex-wrap gap-2 mt-2">
-        <button onclick="saveKeys()" class="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm">Simpan Key</button>
-        <button onclick="testNara()" class="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 text-sm">Tes Koneksi AI</button>
-      </div>
-      <p id="naraStatus" class="text-xs text-zinc-500 mt-2"></p>
-    </div>
-    <div class="card p-5 mt-3">
-      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>Cloud Sync — Supabase (gratis, opsional)</h3>
-      <p class="text-xs text-zinc-500 mt-1">Buat project gratis di <span class="text-zinc-300">supabase.com</span> → buat tabel <code class="text-zinc-300">expenses</code>, <code class="text-zinc-300">inventory</code>, <code class="text-zinc-300">chores</code> (kolom JSON longgar) → paste URL & anon key.</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-        <input id="cfgSupaUrl" placeholder="Supabase URL (https://xxx.supabase.co)" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-        <input id="cfgSupaKey" type="password" placeholder="Supabase Anon Key" class="bg-slate-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-sky-500" />
-      </div>
-      <div class="flex flex-wrap gap-2 mt-2">
-        <button onclick="saveKeys()" class="px-4 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-sm">Simpan & Sync</button>
-        <button onclick="pullSupabase()" class="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-emerald-400 text-sm">Tarik dari Cloud</button>
-      </div>
-      <p id="supaStatus" class="text-xs text-zinc-500 mt-2"></p>
-    </div>
-    <div class="card p-5 mt-3">
-      <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="hard-drive" class="w-4 h-4 text-zinc-300"></i>Database Lokal (JSON)</h3>
-      <div class="flex flex-wrap gap-2 mt-3">
-        <button onclick="exportDB()" class="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 text-sm flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Export JSON</button>
-        <label class="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 hover:border-sky-500 text-sm flex items-center gap-2 cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i>Import JSON<input id="importFile" type="file" accept=".json" class="hidden" onchange="importDB(event)" /></label>
-        <button onclick="wipeDB()" class="px-4 py-2.5 rounded-xl border border-red-900 bg-red-950 hover:border-red-500 text-sm text-red-300">Hapus semua data</button>
-      </div>
-    </div>
-  </section>
-
-  <footer class="text-center text-xs text-zinc-600 mt-10">
-    KosHub OS · single-file static · deploy: upload <code>index.html</code> ke Hugging Face Static Space · MIT
-  </footer>
+  </main>
 </div>
-
-<!-- Mobile bottom nav -->
-<nav class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/90 backdrop-blur border-t border-zinc-800 grid grid-cols-5 text-[10px]">
-  <button onclick="showTab('overview')" class="py-2.5 flex flex-col items-center gap-1 text-zinc-300"><i data-lucide="layout-dashboard" class="w-5 h-5"></i>Home</button>
-  <button onclick="showTab('kas')" class="py-2.5 flex flex-col items-center gap-1 text-zinc-300"><i data-lucide="wallet" class="w-5 h-5"></i>Kas</button>
-  <button onclick="showTab('dapur')" class="py-2.5 flex flex-col items-center gap-1 text-zinc-300"><i data-lucide="refrigerator" class="w-5 h-5"></i>Dapur</button>
-  <button onclick="showTab('piket')" class="py-2.5 flex flex-col items-center gap-1 text-zinc-300"><i data-lucide="calendar-check" class="w-5 h-5"></i>Piket</button>
-  <button onclick="showTab('config')" class="py-2.5 flex flex-col items-center gap-1 text-zinc-300"><i data-lucide="plug" class="w-5 h-5"></i>Setup</button>
-</nav>
-
-<div id="toast" class="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-sm font-semibold shadow-xl"></div>
-
 <script>
-/* ============ KosHub OS — zero-backend SPA ============ */
-const DB_KEY = 'koshub_db_v1';
-const NARA_ENDPOINT = 'https://router.bynara.id/v1/chat/completions';
-const NARA_MODEL = 'agnes-2.5-flash';
-const $ = (id) => document.getElementById(id);
-const fmtRp = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const todayID = () => new Date().toLocaleDateString('id-ID', { weekday: 'long' });
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-/* ---------- state ---------- */
-function seed() {
-  return {
-    expenses: [
-      { id: uid(), title: 'Telur 1kg', amount: 28000, by: 'Adril', date: new Date().toISOString() },
-      { id: uid(), title: 'Iuran sampah', amount: 15000, by: 'Citra', date: new Date().toISOString() }
-    ],
-    inventory: [
-      { id: uid(), name: 'Telur', qty: 1, unit: 'kg' },
-      { id: uid(), name: 'Minyak goreng', qty: 0, unit: 'botol' },
-      { id: uid(), name: 'Beras', qty: 5, unit: 'kg' },
-      { id: uid(), name: 'Mie instan', qty: 8, unit: 'pcs' }
-    ],
-    chores: [
-      { id: uid(), task: 'Senin — Adril: pel lantai + buang sampah', done: false },
-      { id: uid(), task: 'Selasa — Budi: cuci piring + lap kompor', done: false },
-      { id: uid(), task: 'Rabu — Citra: bersihkan kamar mandi', done: false },
-      { id: uid(), task: 'Kamis — Adril: belanja mingguan', done: false },
-      { id: uid(), task: 'Jumat — Budi: setrika area jemur', done: false }
-    ],
-    settings: { bynaraKey: '', supabaseUrl: '', supabaseAnon: '' }
-  };
+KosUI.setTitle('Overview Workspace');
+function render() {
+  var K = KosHub, s = K.store();
+  document.getElementById('kpiKas').textContent = K.fmtRp(K.monthTotal());
+  document.getElementById('kpiKasSub').textContent = K.monthExpenses().length + ' transaksi bulan ini';
+  var k = K.critics();
+  document.getElementById('kpiKritis').textContent = k.length;
+  document.getElementById('kpiKritisSub').textContent = k.length ? k.map(function (i) { return i.name; }).slice(0, 3).join(', ') : 'semua aman ✓';
+  var open = s.chores.filter(function (c) { return !c.done; });
+  document.getElementById('kpiPiket').textContent = K.todayID();
+  document.getElementById('kpiPiketSub').textContent = open.length ? open.length + ' tugas belum selesai' : 'semua beres ✓';
+  var kindIcon = { expense: 'receipt', inventory: 'refrigerator', chore: 'calendar-check', system: 'info' };
+  document.getElementById('activityList').innerHTML = s.activity.slice(0, 8).map(function (a) {
+    return '<div class="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 bg-zinc-950">' +
+      '<i data-lucide="' + (kindIcon[a.kind] || 'dot') + '" class="w-4 h-4 text-zinc-500 shrink-0"></i>' +
+      '<p class="flex-1 text-sm min-w-0 truncate">' + K.esc(a.text) + '</p>' +
+      '<span class="text-[11px] text-zinc-600 shrink-0">' + new Date(a.at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + '</span></div>';
+  }).join('') || '<p class="text-sm text-zinc-500">Belum ada aktivitas.</p>';
+  document.getElementById('chorePreview').innerHTML = open.slice(0, 4).map(function (c) {
+    return '<label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 cursor-pointer text-sm">' +
+      '<input type="checkbox" onchange="KosHub.toggleChore(\'' + c.id + '\')" class="w-4 h-4 accent-emerald-400" />' +
+      '<span class="flex-1 min-w-0 truncate">' + K.esc(c.task) + '</span></label>';
+  }).join('') || '<p class="text-xs text-zinc-500">Semua tugas beres ✓</p>';
+  KosUI.icons();
 }
-function load() { try { const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } }
-let db = load() || seed();
-function save() {
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
-  renderAll();
-  pushSupabase().catch(() => {});
-}
-
-/* ---------- toast ---------- */
-let toastT;
-function toast(msg) {
-  const el = $('toast');
-  el.textContent = msg; el.classList.remove('hidden');
-  clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), 2600);
-}
-
-/* ---------- tabs ---------- */
-function showTab(name) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-  $('tab-' + name).classList.remove('hidden');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  lucide.createIcons();
-  if (name === 'kas' || name === 'overview') drawCharts();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function fillExample(btn) { $('aiInput').value = btn.textContent.trim(); $('aiInput').focus(); }
-
-/* ---------- expenses ---------- */
-function addExpense() {
-  const title = $('expTitle').value.trim();
-  const amount = Number($('expAmount').value);
-  const by = $('expBy').value.trim() || 'Penghuni';
-  if (!title || !amount || amount <= 0) return toast('Isi judul + nominal yang valid');
-  db.expenses.unshift({ id: uid(), title, amount, by, date: new Date().toISOString() });
-  $('expTitle').value = ''; $('expAmount').value = ''; $('expBy').value = '';
-  save(); toast('Transaksi tersimpan ✓');
-}
-function delExpense(id) { db.expenses = db.expenses.filter(e => e.id !== id); save(); }
-
-/* ---------- inventory ---------- */
-function addInventory() {
-  const name = $('invName').value.trim();
-  const qty = Number($('invQty').value);
-  const unit = $('invUnit').value.trim() || 'pcs';
-  if (!name) return toast('Isi nama bahan');
-  const found = db.inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
-  if (found) { found.qty += qty; found.unit = unit; }
-  else db.inventory.unshift({ id: uid(), name, qty, unit });
-  $('invName').value = ''; $('invQty').value = 1; $('invUnit').value = '';
-  save(); toast('Stok tersimpan ✓');
-}
-function bumpInv(id, d) {
-  const it = db.inventory.find(i => i.id === id);
-  if (!it) return;
-  it.qty = Math.max(0, it.qty + d);
-  save();
-}
-function delInv(id) { db.inventory = db.inventory.filter(i => i.id !== id); save(); }
-
-/* ---------- chores ---------- */
-function addChore() {
-  const v = $('choreInput').value.trim();
-  if (!v) return toast('Isi tugas dulu');
-  db.chores.unshift({ id: uid(), task: v, done: false });
-  $('choreInput').value = '';
-  save(); toast('Tugas ditambahkan ✓');
-}
-function toggleChore(id) { const c = db.chores.find(x => x.id === id); if (c) { c.done = !c.done; save(); } }
-function delChore(id) { db.chores = db.chores.filter(x => x.id !== id); save(); }
-function resetChores() { db.chores.forEach(c => c.done = false); save(); toast('Piket di-reset ✓'); }
-
-/* ---------- config ---------- */
-function saveKeys() {
-  db.settings.bynaraKey = $('cfgNara').value.trim() || db.settings.bynaraKey;
-  db.settings.supabaseUrl = $('cfgSupaUrl').value.trim();
-  db.settings.supabaseAnon = $('cfgSupaKey').value.trim();
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
-  updateBadges(); pushSupabase().then(() => toast('Konfigurasi tersimpan ✓')).catch(() => toast('Tersimpan lokal ✓'));
-}
-async function testNara() {
-  const key = $('cfgNara').value.trim() || db.settings.bynaraKey;
-  if (!key) return $('naraStatus').textContent = 'Isi BYNARA_API_KEY dulu.';
-  $('naraStatus').textContent = 'Menghubungi router.bynara.id …';
-  try {
-    const r = await fetch(NARA_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({ model: NARA_MODEL, messages: [{ role: 'user', content: 'balas: ok' }], max_tokens: 8 })
-    });
-    $('naraStatus').textContent = r.ok ? '✓ Koneksi AI OK (' + NARA_MODEL + ')' : '✗ Gagal: HTTP ' + r.status;
-  } catch (e) { $('naraStatus').textContent = '✗ Error jaringan: ' + e.message; }
-}
-function exportDB() {
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'koshub-backup.json'; a.click();
-  URL.revokeObjectURL(a.href);
-}
-function importDB(ev) {
-  const f = ev.target.files[0]; if (!f) return;
-  const rd = new FileReader();
-  rd.onload = () => { try { db = JSON.parse(rd.result); save(); toast('Import berhasil ✓'); } catch { toast('File JSON tidak valid'); } };
-  rd.readAsText(f);
-}
-function wipeDB() { if (confirm('Hapus SEMUA data lokal?')) { db = seed(); db.expenses = []; db.inventory = []; db.chores = []; save(); toast('Data dihapus'); } }
-
-/* ---------- AI: NaraRouter + fallback ---------- */
-function parseAmountLocal(text) {
-  const m = text.match(/(\d+[\.,]?\d*)\s*(jt|juta|rb|ribu|k\b)?/i);
-  if (!m) return 0;
-  let n = parseFloat(m[1].replace(',', '.'));
-  const s = (m[2] || '').toLowerCase();
-  if (s === 'jt' || s === 'juta') n *= 1e6;
-  else if (s === 'rb' || s === 'ribu' || s === 'k') n *= 1e3;
-  else if (n < 1000 && /rb|ribu|k\b/i.test(text)) n *= 1e3;
-  return Math.round(n);
-}
-function localParse(text) {
-  const t = text.toLowerCase();
-  const isInv = /(sisa|stok|kulkas|dapur|butir|habis|kosong|beli baru)/.test(t);
-  const amount = parseAmountLocal(text);
-  let by = 'Penghuni';
-  const mb = text.match(/ditalangin\s+(\w+)|ditanggung\s+(\w+)|ditalangi\s+(\w+)|oleh\s+(\w+)|nalangin\s+(\w+)/i);
-  if (mb) by = (mb[1] || mb[2] || mb[3] || mb[4] || mb[5] || by).replace(/^sendiri$/i, 'Adril');
-  if (/sendiri/.test(t) && by === 'Penghuni') by = 'Adril';
-  const mq = text.match(/sisa\s+(\d+)|(\d+)\s*(kg|butir|pcs|liter|botol|bungkus|pack|karung)/i);
-  const qty = mq ? Number(mq[1] || mq[2]) : (isInv && /sisa\s*0|habis|kosong/.test(t) ? 0 : 1);
-  let title = text.replace(/ditalangin.*$/i, '').replace(/oleh.*$/i, '').replace(/Rp\.?/gi, '').replace(/(\d+[\.,]?\d*)\s*(rb|ribu|k|jt|juta)\b/gi, '').replace(/sisa\s*\d*/gi, '').replace(/beli baru/gi, '').replace(/\s{2,}/g, ' ').trim();
-  title = title.replace(/^(adril|budi|citra)\s+/i, (m) => m).trim() || text.slice(0, 60);
-  return { type: isInv && amount === 0 ? 'inventory' : (isInv && /beli/.test(t) && amount > 0 ? 'expense' : (isInv ? 'inventory' : 'expense')), title, amount, by, qty };
-}
-function stripToJSON(s) {
-  const fenced = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const cand = (fenced ? fenced[1] : s).trim();
-  const a = cand.indexOf('{'), b = cand.lastIndexOf('}');
-  if (a >= 0 && b > a) return cand.slice(a, b + 1);
-  return cand;
-}
-async function processAI() {
-  const text = $('aiInput').value.trim();
-  if (!text) return toast('Ketik dulu, cth: Adril beli telur 1kg 28rb');
-  const key = db.settings.bynaraKey;
-  $('aiStatus').textContent = '⏳ Memproses…';
-  $('aiBtn').disabled = true;
-  let parsed = null, via = 'lokal';
-  if (key) {
-    try {
-      const sys = 'Kamu parser catatan kos ke JSON. Output HANYA JSON valid tanpa markdown, tanpa penjelasan. Skema: {"type":"expense"|"inventory","title":string,"amount":number,"by":string,"qty":number}. Aturan: "beli X <nominal> ditalangin Y" -> expense(title=X, amount=rupiah, by=Y, qty=1). "sisa 0/habis" -> inventory(qty=0, amount=0). "rb/ribu/k"=x1000, "jt/juta"=x1000000. "sendiri"->by="Adril". Contoh input "Adril beli telur 1kg 28rb ditalangin sendiri" -> {"type":"expense","title":"Telur 1kg","amount":28000,"by":"Adril","qty":1}.';
-      const r = await fetch(NARA_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({ model: NARA_MODEL, messages: [{ role: 'system', content: sys }, { role: 'user', content: text }], temperature: 0, max_tokens: 256 })
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const j = await r.json();
-      const content = j?.choices?.[0]?.message?.content || '';
-      parsed = JSON.parse(stripToJSON(content));
-      via = 'AI';
-    } catch (e) {
-      parsed = localParse(text); via = 'lokal (AI gagal: ' + e.message + ')';
-    }
-  } else { parsed = localParse(text); }
-  applyParsed(parsed, text, via);
-  $('aiBtn').disabled = false;
-}
-$('aiInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') processAI(); });
-function applyParsed(p, rawText, via) {
-  if (!p || typeof p !== 'object') { $('aiStatus').textContent = 'Gagal parse. Coba lagi.'; return; }
-  const title = String(p.title || rawText.slice(0, 60)).trim();
-  const amount = Number(p.amount) || 0;
-  const by = String(p.by || 'Penghuni').trim() || 'Penghuni';
-  const qty = Number.isFinite(Number(p.qty)) ? Number(p.qty) : 1;
-  if (p.type === 'inventory') {
-    const name = title.replace(/^(beli|stok|sisa)\s+/i, '').trim() || title;
-    const found = db.inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
-    if (found) found.qty = qty;
-    else db.inventory.unshift({ id: uid(), name, qty, unit: 'pcs' });
-    $('aiStatus').textContent = `✓ [${via}] Inventaris: ${name} → stok ${qty}`;
-    toast('Stok diperbarui ✓');
-  } else {
-    db.expenses.unshift({ id: uid(), title, amount, by, date: new Date().toISOString() });
-    $('aiStatus').textContent = `✓ [${via}] Kas: ${title} ${fmtRp(amount)} (${by})`;
-    toast('Pengeluaran tercatat ✓');
-  }
-  $('aiInput').value = '';
-  save();
-}
-
-/* ---------- supabase (opsional) ---------- */
-let supa = null;
-function initSupabase() {
-  try {
-    const { supabaseUrl, supabaseAnon } = db.settings;
-    supa = (supabaseUrl && supabaseAnon && window.supabase) ? window.supabase.createClient(supabaseUrl, supabaseAnon) : null;
-  } catch { supa = null; }
-  updateBadges();
-}
-async function pushSupabase() {
-  initSupabase();
-  if (!supa) { updateBadges(); return; }
-  for (const tbl of ['expenses', 'inventory', 'chores']) {
-    try {
-      const rows = db[tbl].map(r => ({ data: r }));
-      if (rows.length) await supa.from(tbl).upsert(rows, { onConflict: 'id' }).throwOnError?.();
-    } catch { /* tabel belum ada → abaikan, tetap lokal-first */ }
-  }
-  $('supaStatus') && ($('supaStatus').textContent = '✓ Sync dicoba (pastikan tabel expenses/inventory/chores ada).');
-  updateBadges();
-}
-async function pullSupabase() {
-  initSupabase();
-  if (!supa) return toast('Isi Supabase URL + Anon Key dulu');
-  try {
-    for (const tbl of ['expenses', 'inventory', 'chores']) {
-      const { data, error } = await supa.from(tbl).select('*').limit(500);
-      if (!error && data) {
-        const rows = data.map(r => r.data || r).filter(Boolean);
-        if (rows.length) db[tbl] = rows;
-      }
-    }
-    save(); toast('Tarik cloud selesai ✓');
-  } catch (e) { toast('Gagal tarik: ' + e.message); }
-}
-function updateBadges() {
-  const hasS = !!(db.settings.supabaseUrl && db.settings.supabaseAnon);
-  const hasA = !!db.settings.bynaraKey;
-  $('cloudBadge').textContent = hasS ? '● Cloud on' : '● Lokal';
-  $('cloudBadge').className = 'px-2.5 py-1 rounded-full border text-xs ' + (hasS ? 'border-emerald-800 bg-emerald-950 text-emerald-300' : 'border-zinc-800 bg-zinc-900 text-zinc-400');
-  $('aiBadge').textContent = hasA ? '● AI on' : '● AI off';
-  $('aiBadge').className = 'px-2.5 py-1 rounded-full border text-xs ' + (hasA ? 'border-sky-800 bg-sky-950 text-sky-300' : 'border-zinc-800 bg-zinc-900 text-zinc-400');
-}
-
-/* ---------- render ---------- */
-let chO, chK, chB;
-function critics() { return db.inventory.filter(i => i.qty <= 1); }
-function monthExpenses() {
-  const n = new Date(); return db.expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); });
-}
-function balances() {
-  const paid = {};
-  db.expenses.forEach(e => paid[e.by] = (paid[e.by] || 0) + Number(e.amount || 0));
-  const names = Object.keys(paid);
-  if (!names.length) return [];
-  const total = Object.values(paid).reduce((a, b) => a + b, 0);
-  const share = total / names.length;
-  return names.map(n => ({ name: n, paid: paid[n], net: paid[n] - share })).sort((a, b) => a.net - b.net);
-}
-function renderAll() {
-  const me = monthExpenses();
-  $('kpiKas').textContent = fmtRp(me.reduce((a, e) => a + Number(e.amount || 0), 0));
-  $('kpiKasSub').textContent = me.length + ' transaksi bulan ini';
-  const k = critics();
-  $('kpiKritis').textContent = k.length;
-  $('kpiKritisSub').textContent = k.length ? k.map(i => i.name).slice(0, 3).join(', ') : 'semua aman ✓';
-  const hari = todayID();
-  const tUng = db.chores.filter(c => !c.done);
-  $('kpiPiket').textContent = hari;
-  $('kpiPiketSub').textContent = tUng.length ? tUng.length + ' tugas belum selesai' : 'semua beres ✓';
-
-  $('recentList').innerHTML = db.expenses.slice(0, 5).map(e => `
-    <div class="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 bg-slate-950">
-      <div class="w-9 h-9 rounded-lg bg-emerald-950 border border-emerald-900 flex items-center justify-center"><i data-lucide="receipt" class="w-4 h-4 text-emerald-400"></i></div>
-      <div class="flex-1 min-w-0"><p class="text-sm font-semibold truncate">${esc(e.title)}</p><p class="text-xs text-zinc-500">${esc(e.by)} · ${new Date(e.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p></div>
-      <p class="text-sm font-bold text-emerald-400 whitespace-nowrap">${fmtRp(e.amount)}</p>
-    </div>`).join('') || '<p class="text-sm text-zinc-500">Belum ada transaksi.</p>';
-
-  const bal = balances();
-  $('balanceList').innerHTML = bal.map(b => `
-    <div class="p-3 rounded-xl border ${b.net >= 0 ? 'border-emerald-900 bg-emerald-950/40' : 'border-amber-900 bg-amber-950/30'}">
-      <p class="font-bold text-sm">${esc(b.name)}</p>
-      <p class="text-xs text-zinc-400">Nalangin ${fmtRp(b.paid)}</p>
-      <p class="text-sm font-bold mt-1 ${b.net >= 0 ? 'text-emerald-400' : 'text-amber-400'}">${b.net >= 0 ? 'Kembali +' + fmtRp(b.net) : 'Kurang ' + fmtRp(-b.net)}</p>
-    </div>`).join('') || '<p class="text-sm text-zinc-500">Belum ada data patungan.</p>';
-
-  $('expenseList').innerHTML = db.expenses.map(e => `
-    <div class="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 bg-slate-950">
-      <div class="flex-1 min-w-0"><p class="text-sm font-semibold truncate">${esc(e.title)}</p><p class="text-xs text-zinc-500">${esc(e.by)} · ${new Date(e.date).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p></div>
-      <p class="text-sm font-bold text-emerald-400 whitespace-nowrap">${fmtRp(e.amount)}</p>
-      <button onclick="delExpense('${e.id}')" class="p-1.5 rounded-lg text-zinc-600 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-    </div>`).join('') || '<p class="text-sm text-zinc-500">Belum ada mutasi.</p>';
-
-  $('inventoryList').innerHTML = db.inventory.map(i => `
-    <div class="card p-4 ${i.qty <= 1 ? 'border-amber-800' : ''}">
-      <div class="flex items-start gap-2">
-        <div class="flex-1 min-w-0"><p class="font-bold text-sm truncate">${esc(i.name)}</p>
-          <p class="text-xs text-zinc-500">${i.qty} ${esc(i.unit)}</p></div>
-        ${i.qty <= 1 ? '<span class="text-[11px] font-bold px-2 py-1 rounded-full bg-amber-950 border border-amber-800 text-amber-300 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>KRITIS</span>' : '<span class="text-[11px] px-2 py-1 rounded-full bg-emerald-950 border border-emerald-900 text-emerald-300">Aman</span>'}
-      </div>
-      <div class="flex gap-2 mt-3">
-        <button onclick="bumpInv('${i.id}',-1)" class="flex-1 py-2 rounded-lg border border-zinc-700 bg-zinc-900 font-bold">−</button>
-        <button onclick="bumpInv('${i.id}',1)" class="flex-1 py-2 rounded-lg bg-sky-500 text-slate-950 font-bold">+</button>
-        <button onclick="delInv('${i.id}')" class="px-3 py-2 rounded-lg text-zinc-600 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-      </div>
-    </div>`).join('') || '<p class="text-sm text-zinc-500">Stok kosong. Tambahkan di atas.</p>';
-
-  $('choreList').innerHTML = db.chores.map(c => `
-    <label class="flex items-center gap-3 p-3 rounded-xl border ${c.done ? 'border-emerald-900 bg-emerald-950/30' : 'border-zinc-800 bg-slate-950'} cursor-pointer">
-      <input type="checkbox" ${c.done ? 'checked' : ''} onchange="toggleChore('${c.id}')" class="w-5 h-5 accent-emerald-400" />
-      <span class="flex-1 text-sm ${c.done ? 'line-through text-zinc-500' : 'font-medium'}">${esc(c.task)}</span>
-      <button onclick="delChore('${c.id}')" class="p-1.5 text-zinc-600 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </label>`).join('') || '<p class="text-sm text-zinc-500">Belum ada jadwal.</p>';
-
-  if (db.settings.bynaraKey && !$('cfgNara').value) $('cfgNara').value = '••••••••';
-  if (db.settings.supabaseUrl) $('cfgSupaUrl').value = db.settings.supabaseUrl;
-  lucide.createIcons();
-  drawCharts();
-}
-function last14() {
-  const days = [], map = {};
-  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const k = d.toISOString().slice(0, 10); days.push(k); map[k] = 0; }
-  db.expenses.forEach(e => { const k = new Date(e.date).toISOString().slice(0, 10); if (k in map) map[k] += Number(e.amount || 0); });
-  return { labels: days.map(k => k.slice(5)), values: days.map(k => map[k]) };
-}
-function drawCharts() {
-  if (!window.Chart) return;
-  Chart.defaults.color = '#71717a'; Chart.defaults.borderColor = '#27272a';
-  const d14 = last14();
-  const mk = (id, cfg) => { const el = $(id); if (!el) return null; const old = Chart.getChart(el); if (old) old.destroy(); return new Chart(el, cfg); };
-  if (!$('tab-overview').classList.contains('hidden'))
-    chO = mk('chartOverview', { type: 'bar', data: { labels: d14.labels, datasets: [{ data: d14.values, backgroundColor: '#0ea5e9', borderRadius: 6 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false } });
-  if (!$('tab-kas').classList.contains('hidden')) {
-    chK = mk('chartKas', { type: 'bar', data: { labels: d14.labels, datasets: [{ data: d14.values, backgroundColor: '#34d399', borderRadius: 6 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false } });
-    const by = {};
-    db.expenses.forEach(e => by[e.by] = (by[e.by] || 0) + Number(e.amount || 0));
-    chB = mk('chartBy', { type: 'doughnut', data: { labels: Object.keys(by), datasets: [{ data: Object.values(by), backgroundColor: ['#0ea5e9', '#34d399', '#fbbf24', '#f472b6', '#a78bfa'] }] }, options: { maintainAspectRatio: false } });
-  }
-}
-
-/* ---------- boot ---------- */
-initSupabase();
-renderAll();
-lucide.createIcons();
+document.addEventListener('DOMContentLoaded', render);
+KosHub.onChange(render);
 </script>
 </body>
 </html>
