@@ -6,8 +6,8 @@ Platform SaaS prosedural & modular untuk mengelola kos: **AI kas parser**, **spl
 
 ```text
 Browser (HP/desktop)
- ├── landing.html        → public landing (route /)
- ├── index.html          → overview workspace (route /app)
+ ├── index.html          → public landing (route /, file statis)
+ ├── app.html            → overview workspace (route /app)
  ├── finance.html        → kas & split bill (route /finance)
  ├── inventory.html      → kulkas & dapur (route /inventory)
  ├── schedule.html       → piket (route /schedule)
@@ -34,8 +34,8 @@ public/
   js/ai-client.js    # KosAI global: parse/apply/testConnection
   js/components.js   # KosUI global: chrome + spotlight + toast
   css/app.css        # card, nav-link, field, animasi
-landing.html index.html finance.html inventory.html schedule.html settings.html
-vercel.json          # cleanUrls + rewrites rute bersih
+index.html app.html finance.html inventory.html schedule.html settings.html
+vercel.json          # cleanUrls + rewrites rute bersih (root / dilayani index.html statis)
 .gitignore
 README.md
 ```

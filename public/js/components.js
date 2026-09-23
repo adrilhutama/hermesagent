@@ -11,7 +11,7 @@
   'use strict';
 
   var NAV = [
-    { href: '/app', page: 'index', icon: 'layout-dashboard', label: 'Overview' },
+    { href: '/app', page: 'app', icon: 'layout-dashboard', label: 'Overview' },
     { href: '/finance', page: 'finance', icon: 'wallet', label: 'Kas & Split Bill' },
     { href: '/inventory', page: 'inventory', icon: 'refrigerator', label: 'Kulkas & Dapur' },
     { href: '/schedule', page: 'schedule', icon: 'calendar-check', label: 'Piket' },
@@ -19,7 +19,7 @@
   ];
 
   function currentPage() {
-    return (document.body && document.body.dataset && document.body.dataset.page) || 'index';
+    return (document.body && document.body.dataset && document.body.dataset.page) || 'app';
   }
 
   function navHTML() {
